@@ -8,9 +8,9 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/groups"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 func tableOpenstackGroup(ctx context.Context) *plugin.Table {
@@ -19,6 +19,10 @@ func tableOpenstackGroup(ctx context.Context) *plugin.Table {
 		Description: "Table of all groups.",
 		List: &plugin.ListConfig{
 			Hydrate: listGroup,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getGroup,
 		},
 		Columns: []*plugin.Column{
 			{Name: "description", Type: proto.ColumnType_STRING, Transform: transform.FromField("Group.Description"), Description: "Description describes the group purpose."},
@@ -81,4 +85,47 @@ func listGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	}
 
 	return nil, nil
+}
+
+func getGroup(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_group.getGroup", "connection_error", err)
+		return nil, err
+	}
+
+	// get identity client from provider
+	identityClient, err := openstack.NewIdentityV3(provider, gophercloud.EndpointOpts{})
+	if err != nil {
+		logger.Error("openstack_group.getGroup", "connection_error", err)
+		return nil, err
+	}
+
+	// get group
+	group, err := groups.Get(identityClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_group.getGroup", "query_error", err)
+		return nil, err
+	}
+
+	// get users of group
+	var memberList []string
+	allPages, err := users.ListInGroup(identityClient, group.ID, users.ListOpts{}).AllPages()
+	allMembers, err := users.ExtractUsers(allPages)
+	if err != nil {
+		logger.Error("openstack_group.getGroup", "query_error", err)
+		return nil, err
+	}
+
+	for _, member := range allMembers {
+		memberList = append(memberList, member.ID)
+	}
+
+	membersJSON, err := json.Marshal(memberList)
+	return GroupEntry{*group, string(membersJSON)}, nil
 }

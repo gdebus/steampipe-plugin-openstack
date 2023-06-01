@@ -6,17 +6,21 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/servergroups"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
-func tableOpenstackServergroup(ctx context.Context) *plugin.Table {
+func tableOpenstackServerGroup(ctx context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "openstack_servergroup",
+		Name:        "openstack_server_group",
 		Description: "Table of all server groups.",
 		List: &plugin.ListConfig{
-			Hydrate: listServergroup,
+			Hydrate: listServerGroup,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getServerGroup,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "ID is the unique ID of the Server Group."},
@@ -32,13 +36,13 @@ func tableOpenstackServergroup(ctx context.Context) *plugin.Table {
 	}
 }
 
-func listServergroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listServerGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
 
 	logger := plugin.Logger(ctx)
 
 	provider, err := connect(ctx, d)
 	if err != nil {
-		logger.Error("openstack_servergroup.listServergroup", "connection_error", err)
+		logger.Error("openstack_server_group.listServerGroup", "connection_error", err)
 		return nil, err
 	}
 
@@ -46,14 +50,14 @@ func listServergroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	computeClient, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{})
 
 	if err != nil {
-		logger.Error("openstack_servergroup.listServergroup", "connection_error", err)
+		logger.Error("openstack_server_group.listServerGroup", "connection_error", err)
 		return nil, err
 	}
 
 	// get server groups
 	allPages, err := servergroups.List(computeClient, servergroups.ListOpts{}).AllPages()
 	if err != nil {
-		logger.Error("openstack_servergroup.listServergroup", "query_error", err)
+		logger.Error("openstack_server_group.listServerGroup", "query_error", err)
 		return nil, err
 	}
 
@@ -63,4 +67,29 @@ func listServergroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	}
 
 	return nil, nil
+}
+
+func getServerGroup(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_server_group.getServerGroup", "connection_error", err)
+		return nil, err
+	}
+
+	// get compute client from provider
+	computeClient, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{})
+
+	// get server group
+	servergroup, err := servergroups.Get(computeClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_server_group.getServerGroup", "query_error", err)
+		return nil, err
+	}
+
+	return servergroup, nil
 }

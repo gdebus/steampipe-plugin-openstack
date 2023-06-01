@@ -6,17 +6,21 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/images"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 func tableOpenstackComputeImage(ctx context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "openstack_image",
+		Name:        "openstack_compute_image",
 		Description: "Table of all images.",
 		List: &plugin.ListConfig{
 			Hydrate: listComputeImage,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getComputeImage,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "ID is the unique ID of an image."},
@@ -38,7 +42,7 @@ func listComputeImage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 
 	provider, err := connect(ctx, d)
 	if err != nil {
-		logger.Error("openstack_image.listComputeImage", "connection_error", err)
+		logger.Error("openstack_compute_image.listComputeImage", "connection_error", err)
 		return nil, err
 	}
 
@@ -46,14 +50,14 @@ func listComputeImage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	computeClient, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{})
 
 	if err != nil {
-		logger.Error("openstack_image.listComputeImage", "connection_error", err)
+		logger.Error("openstack_compute_image.listComputeImage", "connection_error", err)
 		return nil, err
 	}
 
 	// get images
 	allPages, err := images.ListDetail(computeClient, images.ListOpts{}).AllPages()
 	if err != nil {
-		logger.Error("openstack_image.listComputeImage", "query_error", err)
+		logger.Error("openstack_compute_image.listComputeImage", "query_error", err)
 		return nil, err
 	}
 
@@ -63,4 +67,29 @@ func listComputeImage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	}
 
 	return nil, nil
+}
+
+func getComputeImage(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_compute_image.getComputeImage", "connection_error", err)
+		return nil, err
+	}
+
+	// get compute client from provider
+	computeClient, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{})
+
+	// get image
+	image, err := images.Get(computeClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_compute_image.getComputeImage", "query_error", err)
+		return nil, err
+	}
+
+	return image, nil
 }

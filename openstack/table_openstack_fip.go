@@ -6,8 +6,8 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/layer3/floatingips"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 func tableOpenstackFip(ctx context.Context) *plugin.Table {
@@ -16,6 +16,10 @@ func tableOpenstackFip(ctx context.Context) *plugin.Table {
 		Description: "Table of all floating IPs.",
 		List: &plugin.ListConfig{
 			Hydrate: listFip,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getFip,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "ID is the unique identifier for the floating IP instance."},
@@ -66,4 +70,29 @@ func listFip(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (i
 	}
 
 	return nil, nil
+}
+
+func getFip(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_fip.getFip", "connection_error", err)
+		return nil, err
+	}
+
+	// get network client from provider
+	networkClient, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{})
+
+	// get floating IP (fip)
+	fip, err := floatingips.Get(networkClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_fip.getFip", "query_error", err)
+		return nil, err
+	}
+
+	return fip, nil
 }

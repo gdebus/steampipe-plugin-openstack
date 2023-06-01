@@ -6,8 +6,8 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/domains"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 func tableOpenstackDomain(ctx context.Context) *plugin.Table {
@@ -16,6 +16,10 @@ func tableOpenstackDomain(ctx context.Context) *plugin.Table {
 		Description: "Table of all domains.",
 		List: &plugin.ListConfig{
 			Hydrate: listDomain,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getDomain,
 		},
 		Columns: []*plugin.Column{
 			{Name: "description", Type: proto.ColumnType_STRING, Description: "Description is the description of the Domain."},
@@ -58,4 +62,29 @@ func listDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	}
 
 	return nil, nil
+}
+
+func getDomain(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_domain.getDomain", "connection_error", err)
+		return nil, err
+	}
+
+	// get identity client from provider
+	identityClient, err := openstack.NewIdentityV3(provider, gophercloud.EndpointOpts{})
+
+	// get domain
+	domain, err := domains.Get(identityClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_domain.getDomain", "query_error", err)
+		return nil, err
+	}
+
+	return domain, nil
 }

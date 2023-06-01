@@ -6,20 +6,23 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
-func tableOpenstackSecGroupRule(ctx context.Context) *plugin.Table {
+func tableOpenstackSecurityGroupRule(ctx context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "openstack_secgrouprule",
+		Name:        "openstack_security_group_rule",
 		Description: "Table of all security group rules.",
 		List: &plugin.ListConfig{
-			Hydrate: listSecGroupRule,
+			Hydrate: listSecurityGroupRule,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getSecurityGroupRule,
 		},
 		Columns: []*plugin.Column{
-			{Name: "rule_id", Type: proto.ColumnType_STRING, Transform: transform.FromField("ID"), Description: "The UUID for the security group."},
+			{Name: "id", Type: proto.ColumnType_STRING, Description: "The UUID for the security group."},
 			{Name: "direction", Type: proto.ColumnType_STRING, Description: "The direction in which the security group rule is applied. The only values allowed are 'ingress' or 'egress'."},
 			{Name: "description", Type: proto.ColumnType_STRING, Description: "Description of the rule."},
 			{Name: "ether_type", Type: proto.ColumnType_STRING, Description: "Must be IPv4 or IPv6, and addresses represented in CIDR must match the ingress or egress rules."},
@@ -35,13 +38,13 @@ func tableOpenstackSecGroupRule(ctx context.Context) *plugin.Table {
 	}
 }
 
-func listSecGroupRule(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listSecurityGroupRule(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
 
 	logger := plugin.Logger(ctx)
 
 	provider, err := connect(ctx, d)
 	if err != nil {
-		logger.Error("openstack_secgrouprule.listSecGroupRule", "connection_error", err)
+		logger.Error("openstack_security_group_rule.listSecurityGroupRule", "connection_error", err)
 		return nil, err
 	}
 
@@ -49,14 +52,14 @@ func listSecGroupRule(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	networkClient, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{})
 
 	if err != nil {
-		logger.Error("openstack_secgrouprule.listSecGroupRule", "connection_error", err)
+		logger.Error("openstack_security_group_rule.listSecurityGroupRule", "connection_error", err)
 		return nil, err
 	}
 
 	// get security group rules
 	allPages, err := rules.List(networkClient, rules.ListOpts{}).AllPages()
 	if err != nil {
-		logger.Error("openstack_secgrouprule.listSecGroupRule", "query_error", err)
+		logger.Error("openstack_security_group_rule.listSecurityGroupRule", "query_error", err)
 		return nil, err
 	}
 
@@ -66,4 +69,29 @@ func listSecGroupRule(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	}
 
 	return nil, nil
+}
+
+func getSecurityGroupRule(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_security_group_rule.getSecurityGroupRule", "connection_error", err)
+		return nil, err
+	}
+
+	// get network client from provider
+	networkClient, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{})
+
+	// get security group rule
+	rule, err := rules.Get(networkClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_security_group_rule.getSecurityGroupRule", "query_error", err)
+		return nil, err
+	}
+
+	return rule, nil
 }

@@ -6,9 +6,8 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/snapshots"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 func tableOpenstackSnapshot(ctx context.Context) *plugin.Table {
@@ -18,11 +17,15 @@ func tableOpenstackSnapshot(ctx context.Context) *plugin.Table {
 		List: &plugin.ListConfig{
 			Hydrate: listSnapshot,
 		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getSnapshot,
+		},
 		Columns: []*plugin.Column{
-			{Name: "snapshot_id", Type: proto.ColumnType_STRING, Transform: transform.FromField("ID"), Description: "Unique identifier."},
+			{Name: "id", Type: proto.ColumnType_STRING, Description: "Unique identifier."},
 			{Name: "created_at", Type: proto.ColumnType_TIMESTAMP, Description: "The date when this snapshot was last updated."},
 			{Name: "updated_at", Type: proto.ColumnType_TIMESTAMP, Description: "The date when this snapshot was created."},
-			{Name: "snapshot_name", Type: proto.ColumnType_STRING, Transform: transform.FromField("Name"), Description: "Human-readable display name for the snapshot."},
+			{Name: "name", Type: proto.ColumnType_STRING, Description: "Human-readable display name for the snapshot."},
 			{Name: "description", Type: proto.ColumnType_STRING, Description: "Human-readable description for the snapshot."},
 			{Name: "volume_id", Type: proto.ColumnType_STRING, Description: "ID of the Volume from which this Snapshot was created."},
 			{Name: "status", Type: proto.ColumnType_STRING, Description: "Current status of the snapshot."},
@@ -69,4 +72,29 @@ func listSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	}
 
 	return nil, nil
+}
+
+func getSnapshot(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_snapshot.getSnapshot", "connection_error", err)
+		return nil, err
+	}
+
+	// get block storage client from provider
+	blockStorageClient, err := openstack.NewBlockStorageV3(provider, gophercloud.EndpointOpts{})
+
+	// get snapshot
+	snapshot, err := snapshots.Get(blockStorageClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_snapshot.getSnapshot", "query_error", err)
+		return nil, err
+	}
+
+	return snapshot, nil
 }

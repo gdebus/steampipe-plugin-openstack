@@ -6,16 +6,20 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
-func tableOpenstackSecGroup(ctx context.Context) *plugin.Table {
+func tableOpenstackSecurityGroup(ctx context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "openstack_secgroup",
+		Name:        "openstack_security_group",
 		Description: "Table of all security groups.",
 		List: &plugin.ListConfig{
-			Hydrate: listSecGroup,
+			Hydrate: listSecurityGroup,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getSecurityGroup,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "The UUID for the security group."},
@@ -30,13 +34,13 @@ func tableOpenstackSecGroup(ctx context.Context) *plugin.Table {
 	}
 }
 
-func listSecGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listSecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
 
 	logger := plugin.Logger(ctx)
 
 	provider, err := connect(ctx, d)
 	if err != nil {
-		logger.Error("openstack_secgroup.listSecGroup", "connection_error", err)
+		logger.Error("openstack_security_group.listSecurityGroup", "connection_error", err)
 		return nil, err
 	}
 
@@ -44,14 +48,14 @@ func listSecGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	networkClient, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{})
 
 	if err != nil {
-		logger.Error("openstack_secgroup.listSecGroup", "connection_error", err)
+		logger.Error("openstack_security_group.listSecurityGroup", "connection_error", err)
 		return nil, err
 	}
 
 	// get security groups
 	allPages, err := groups.List(networkClient, groups.ListOpts{}).AllPages()
 	if err != nil {
-		logger.Error("openstack_secgroup.listSecGroup", "query_error", err)
+		logger.Error("openstack_security_group.listSecurityGroup", "query_error", err)
 		return nil, err
 	}
 
@@ -61,4 +65,29 @@ func listSecGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	}
 
 	return nil, nil
+}
+
+func getSecurityGroup(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_security_group.getSecurityGroup", "connection_error", err)
+		return nil, err
+	}
+
+	// get network client from provider
+	networkClient, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{})
+
+	// get security group
+	group, err := groups.Get(networkClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_security_group.getSecurityGroup", "query_error", err)
+		return nil, err
+	}
+
+	return group, nil
 }

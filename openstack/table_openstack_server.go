@@ -6,9 +6,9 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 func tableOpenstackServer(ctx context.Context) *plugin.Table {
@@ -17,6 +17,10 @@ func tableOpenstackServer(ctx context.Context) *plugin.Table {
 		Description: "Table of all server instances.",
 		List: &plugin.ListConfig{
 			Hydrate: listServer,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getServer,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "ID uniquely identifies this server."},
@@ -77,4 +81,29 @@ func listServer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	}
 
 	return nil, nil
+}
+
+func getServer(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_server.getServer", "connection_error", err)
+		return nil, err
+	}
+
+	// get compute client from provider
+	computeClient, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{})
+
+	// get server
+	server, err := servers.Get(computeClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_server.getServer", "query_error", err)
+		return nil, err
+	}
+
+	return server, nil
 }

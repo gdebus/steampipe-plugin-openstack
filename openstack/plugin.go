@@ -3,8 +3,8 @@ package openstack
 import (
 	"context"
 
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 func Plugin(ctx context.Context) *plugin.Plugin {
@@ -17,21 +17,21 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 		DefaultTransform: transform.FromGo().NullIfZero(),
 		TableMap: map[string]*plugin.Table{
 			// identity
-			"openstack_user":                  tableOpenstackUser(ctx),
-			"openstack_role":                  tableOpenstackRole(ctx),
-			"openstack_role_assignment":       tableOpenstackRoleAssignment(ctx),
-			"openstack_group":                 tableOpenstackGroup(ctx),
-			"openstack_project":               tableOpenstackProject(ctx),
-			"openstack_domain":                tableOpenstackDomain(ctx),
-			"openstack_applicationcredential": tableOpenstackApplicationcredential(ctx),
+			"openstack_user":                   tableOpenstackUser(ctx),
+			"openstack_role":                   tableOpenstackRole(ctx),
+			"openstack_role_assignment":        tableOpenstackRoleAssignment(ctx),
+			"openstack_group":                  tableOpenstackGroup(ctx),
+			"openstack_project":                tableOpenstackProject(ctx),
+			"openstack_domain":                 tableOpenstackDomain(ctx),
+			"openstack_application_credential": tableOpenstackApplicationCredential(ctx),
 			// network
-			"openstack_fip":          tableOpenstackFip(ctx),
-			"openstack_secgroup":     tableOpenstackSecGroup(ctx),
-			"openstack_secgrouprule": tableOpenstackSecGroupRule(ctx),
-			"openstack_router":       tableOpenstackRouter(ctx),
-			"openstack_network":      tableOpenstackNetwork(ctx),
-			"openstack_subnet":       tableOpenstackSubnet(ctx),
-			"openstack_port":         tableOpenstackPort(ctx),
+			"openstack_fip":                 tableOpenstackFip(ctx),
+			"openstack_security_group":      tableOpenstackSecurityGroup(ctx),
+			"openstack_security_group_rule": tableOpenstackSecurityGroupRule(ctx),
+			"openstack_router":              tableOpenstackRouter(ctx),
+			"openstack_network":             tableOpenstackNetwork(ctx),
+			"openstack_subnet":              tableOpenstackSubnet(ctx),
+			"openstack_port":                tableOpenstackPort(ctx),
 			// volumes
 			"openstack_volume":      tableOpenstackVolume(ctx),
 			"openstack_snapshot":    tableOpenstackSnapshot(ctx),
@@ -40,7 +40,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			"openstack_server":            tableOpenstackServer(ctx),
 			"openstack_compute_image":     tableOpenstackComputeImage(ctx),
 			"openstack_keypair":           tableOpenstackKeypair(ctx),
-			"openstack_servergroup":       tableOpenstackServergroup(ctx),
+			"openstack_server_group":      tableOpenstackServerGroup(ctx),
 			"openstack_aggregate":         tableOpenstackAggregate(ctx),
 			"openstack_availability_zone": tableOpenstackAvailabilityZone(ctx),
 		},

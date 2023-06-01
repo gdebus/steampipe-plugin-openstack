@@ -6,9 +6,9 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 func tableOpenstackVolume(ctx context.Context) *plugin.Table {
@@ -17,6 +17,10 @@ func tableOpenstackVolume(ctx context.Context) *plugin.Table {
 		Description: "Table of all volumes.",
 		List: &plugin.ListConfig{
 			Hydrate: listVolume,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getVolume,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "Unique identifier for the volume."},
@@ -85,4 +89,29 @@ func listVolume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	}
 
 	return nil, nil
+}
+
+func getVolume(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_volume.getVolume", "connection_error", err)
+		return nil, err
+	}
+
+	// get block storage client from provider
+	blockStorageClient, err := openstack.NewBlockStorageV3(provider, gophercloud.EndpointOpts{})
+
+	// get volume
+	volume, err := volumes.Get(blockStorageClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_volume.getVolume", "query_error", err)
+		return nil, err
+	}
+
+	return volume, nil
 }

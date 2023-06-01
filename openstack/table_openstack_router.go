@@ -6,9 +6,9 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/layer3/routers"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 func tableOpenstackRouter(ctx context.Context) *plugin.Table {
@@ -17,6 +17,10 @@ func tableOpenstackRouter(ctx context.Context) *plugin.Table {
 		Description: "Table of all routers.",
 		List: &plugin.ListConfig{
 			Hydrate: listRouter,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getRouter,
 		},
 		Columns: []*plugin.Column{
 			{Name: "status", Type: proto.ColumnType_STRING, Description: "Status indicates whether or not a router is currently operational."},
@@ -69,4 +73,29 @@ func listRouter(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	}
 
 	return nil, nil
+}
+
+func getRouter(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_router.getRouter", "connection_error", err)
+		return nil, err
+	}
+
+	// get network client from provider
+	networkClient, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{})
+
+	// get router
+	router, err := routers.Get(networkClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_router.getRouter", "query_error", err)
+		return nil, err
+	}
+
+	return router, nil
 }

@@ -6,8 +6,8 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/projects"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 func tableOpenstackProject(ctx context.Context) *plugin.Table {
@@ -16,6 +16,10 @@ func tableOpenstackProject(ctx context.Context) *plugin.Table {
 		Description: "Table of all projects.",
 		List: &plugin.ListConfig{
 			Hydrate: listProject,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getProject,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "ID is the unique ID of the project."},
@@ -62,4 +66,29 @@ func listProject(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	}
 
 	return nil, nil
+}
+
+func getProject(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_project.getProject", "connection_error", err)
+		return nil, err
+	}
+
+	// get identity client from provider
+	identityClient, err := openstack.NewIdentityV3(provider, gophercloud.EndpointOpts{})
+
+	// get project
+	project, err := projects.Get(identityClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_project.getProject", "query_error", err)
+		return nil, err
+	}
+
+	return project, nil
 }

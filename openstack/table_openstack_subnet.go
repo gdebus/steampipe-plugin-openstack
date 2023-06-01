@@ -6,9 +6,9 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
 func tableOpenstackSubnet(ctx context.Context) *plugin.Table {
@@ -17,6 +17,10 @@ func tableOpenstackSubnet(ctx context.Context) *plugin.Table {
 		Description: "Table of all subnets.",
 		List: &plugin.ListConfig{
 			Hydrate: listSubnet,
+		},
+		Get: &plugin.GetConfig{
+			KeyColumns: plugin.SingleColumn("id"),
+			Hydrate:    getSubnet,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "UUID representing the subnet."},
@@ -72,4 +76,29 @@ func listSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	}
 
 	return nil, nil
+}
+
+func getSubnet(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+
+	logger := plugin.Logger(ctx)
+
+	id := d.EqualsQuals["id"].GetStringValue()
+
+	provider, err := connect(ctx, d)
+	if err != nil {
+		logger.Error("openstack_subnet.getSubnet", "connection_error", err)
+		return nil, err
+	}
+
+	// get network client from provider
+	networkClient, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{})
+
+	// get subnet
+	subnet, err := subnets.Get(networkClient, id).Extract()
+	if err != nil {
+		logger.Error("openstack_subnet.getSubnet", "query_error", err)
+		return nil, err
+	}
+
+	return subnet, nil
 }
