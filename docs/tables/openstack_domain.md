@@ -16,6 +16,19 @@ from
   openstack_domain;
 ```
 
+### Domain by ID
+
+```sql
+select
+  name,
+  description,
+  id
+from
+  openstack_domain
+where
+  id = 'default';
+```
+
 ### All active domains
 
 ```sql

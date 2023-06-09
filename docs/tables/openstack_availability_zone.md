@@ -14,3 +14,16 @@ select
 from
   openstack_availability_zone;
 ```
+
+### All available availability zones
+
+```sql
+select
+  hosts,
+  zone_name,
+  zone_state
+from
+  openstack_availability_zone
+where
+  zone_state ->> 'available' = 'true';
+```

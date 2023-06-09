@@ -21,6 +21,25 @@ from
   openstack_subnet;
 ```
 
+### Subnet by ID
+
+```sql
+select
+  name,
+  description,
+  id,
+  ip_version,
+  cidr,
+  gateway_ip,
+  allocation_pools,
+  enable_dhcp,
+  project_id
+from
+  openstack_subnet
+where
+  id = '2e4a84c9-5ee2-42d2-9608-4194b0d5e865';
+```
+
 ### All IPv4 subnets
 
 ```sql

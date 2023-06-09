@@ -22,6 +22,44 @@ from
   openstack_port;
 ```
 
+### Port by ID
+
+```sql
+select
+  name,
+  description,
+  status,
+  id,
+  mac_address,
+  fixed_ips,
+  project_id,
+  device_owner,
+  security_groups,
+  created_at
+from
+  openstack_port
+where id = '07df44e6-b45b-49e8-b701-303a6f33615d';
+```
+
+### Ports created in the last 30 days
+
+```sql
+select
+  name,
+  description,
+  id,
+  mac_address,
+  fixed_ips,
+  project_id,
+  device_owner,
+  security_groups,
+  created_at
+from
+  openstack_port
+where
+  date_part('day',current_date::timestamp - created_at::timestamp) <= 30;
+```
+
 ### All active ports
 
 ```sql

@@ -44,3 +44,17 @@ from
 where
   user_id is not null;
 ```
+
+### All user-domain assignments
+
+```sql
+select
+  user_id,
+  scope_project_id,
+  scope_domain_id,
+  scope_role_id
+from
+  openstack_role_assignment
+where
+  scope_domain_id is not null;
+```

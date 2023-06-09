@@ -20,6 +20,24 @@ from
   openstack_user;
 ```
 
+### User by ID
+
+```sql
+select
+  name,
+  description,
+  email,
+  enabled,
+  lock_password,
+  domain_id,
+  password_expires_at,
+  default_project_id
+from
+  openstack_user
+where
+  id = 'e021d695cc604acdb8866686b51f6321';
+```
+
 ### All disabled users
 
 ```sql

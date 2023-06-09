@@ -8,9 +8,35 @@ A role grants authorization to an end-user and dictates the authorization level 
 
 ```sql
 select
-  role_id,
-  role_name,
-  extra_description
+  id,
+  name,
+  extra
 from
   openstack_role;
+```
+
+### Role by ID
+
+```sql
+select
+  id,
+  name,
+  extra
+from
+  openstack_role
+where
+  id = 'd104344e6db0467689a3e721edc9dc2b';
+```
+
+### Roles with a description
+
+```sql
+select
+  id,
+  name,
+  extra
+from
+  openstack_role
+where
+  extra -> 'description' != 'null';
 ```

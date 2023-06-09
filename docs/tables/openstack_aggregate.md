@@ -16,6 +16,20 @@ from
   openstack_aggregate;
 ```
 
+### Aggregate by ID
+
+```sql
+select
+  availability_zone,
+  hosts,
+  id,
+  name
+from
+  openstack_aggregate
+where
+  id = 1;
+```
+
 ### All deleted aggregates
 
 ```sql
@@ -32,4 +46,18 @@ from
   openstack_aggregate
 where
   deleted = true;
+```
+
+### Aggregates created in the last 90 days
+
+```sql
+select
+  availability_zone,
+  hosts,
+  id,
+  name
+from
+  openstack_aggregate
+where
+  date_part('day',current_date::timestamp - created_at::timestamp) <= 90;
 ```

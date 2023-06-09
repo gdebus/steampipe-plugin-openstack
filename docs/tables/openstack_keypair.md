@@ -17,6 +17,21 @@ from
   openstack_keypair;
 ```
 
+### Keypair by name
+
+```sql
+select
+  name,
+  fingerprint,
+  public_key,
+  private_key,
+  user_id
+from
+  openstack_keypair
+where
+  name = 'keypairname';
+```
+
 ### All certificates
 
 ```sql
@@ -29,5 +44,5 @@ select
 from
   openstack_keypair
 where
-  public_key like '-----BEGIN CERTIFICATE-----%'
+  public_key like '-----BEGIN CERTIFICATE-----%';
 ```

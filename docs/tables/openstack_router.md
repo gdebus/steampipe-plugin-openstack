@@ -17,6 +17,21 @@ from
   openstack_router;
 ```
 
+### Router by ID
+
+```sql
+select
+  name,
+  description,
+  status,
+  id,
+  project_id
+from
+  openstack_router
+where
+  id = '962adcf6-a93a-4402-a90a-4f9ce60e239e';
+```
+
 ### All active routers
 
 ```sql

@@ -18,6 +18,22 @@ from
   openstack_project;
 ```
 
+### Project by ID
+
+```sql
+select
+  name,
+  description,
+  is_domain,
+  domain_id,
+  enabled,
+  id
+from
+  openstack_project
+where
+  id = '460f07e045ba4f5fbe35573739073c39';
+```
+
 ### All active projects
 
 ```sql
@@ -36,7 +52,7 @@ where
 
 ### All projects that are a domain
 
-```
+```sql
 select
   name,
   description,
@@ -52,7 +68,7 @@ where
 
 ### All projects of the default domain
 
-```
+```sql
 select
   name,
   description,
