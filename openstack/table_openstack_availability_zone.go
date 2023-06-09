@@ -20,7 +20,7 @@ func tableOpenstackAvailabilityZone(ctx context.Context) *plugin.Table {
 		Columns: []*plugin.Column{
 			{Name: "hosts", Type: proto.ColumnType_JSON, Description: "Hosts in the availability zone."},
 			{Name: "zone_name", Type: proto.ColumnType_STRING, Description: "Name of the availability zone."},
-			{Name: "zone_state", Type: proto.ColumnType_STRING, Description: "State of the availability zone."},
+			{Name: "zone_state", Type: proto.ColumnType_JSON, Description: "State of the availability zone."},
 		},
 	}
 }
