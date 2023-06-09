@@ -1,22 +1,22 @@
 ---
-organization: Turbot
+organization: ERNW
 category: ["software development"]
-icon_url: "/images/plugins/turbot/openstack.svg"
+icon_url: "/images/plugins/ernw/openstack.svg"
 brand_color: "#ed1944"
 display_name: OpenStack
 name: openstack
-description: Steampipe plugin to query OpenStack deployments.
+description: Steampipe plugin to query cloud resource information from OpenStack deployments.
 og_description: Query OpenStack with SQL! Open source CLI. No DB required.
-og_image: "/images/plugins/turbot/openstack-graphic.png"
+og_image: "/images/plugins/ernw/openstack-graphic.png"
 ---
 
 # OpenStack + Steampipe
 
-[Steampipe](https://steampipe.io) is an open source CLI to instantly query cloud APIs using SQL.
-
 [OpenStack](https://www.openstack.org/) is the most widely deployed open source cloud software in the world.
 
-Example query:
+[Steampipe](https://steampipe.io) is an open source CLI to instantly query cloud APIs using SQL.
+
+For example:
 
 ```sql
 select
@@ -40,7 +40,7 @@ from
 
 ## Documentation
 
-- **[Table definitions & examples →](/plugins/turbot/openstack/tables)**
+- **[Table definitions & examples →](/plugins/ernw/openstack/tables)**
 
 ## Get started
 
@@ -49,69 +49,62 @@ from
 Download and install the latest OpenStack plugin:
 
 ```bash
-steampipe plugin install openstack
+steampipe plugin install ernw/openstack
 ```
+
+### Credentials
+
+| Item | Description |
+| - | - |
+| Credentials | [Get credentials from your OpenStack deployment](https://docs.openstack.org/mitaka/cli-reference/common/cli_set_environment_variables_using_openstack_rc.html). |
+| Resolution | 1. Credentials explicitly set in a Steampipe config file (`~/.steampipe/config/openstack.spc`).<br /> 2. Credentials specified in environment variables.|
 
 ### Configuration
 
-Installing the latest openstack plugin will create a config file (`~/.steampipe/config/openstack.spc`) with a single connection named `openstack`:
+Installing the latest OpenStack plugin will create a config file (`~/.steampipe/config/openstack.spc`) with a single connection named `openstack`.
+
+Configure your account details in `~/.steampipe/config/openstack.spc`:
 
 ```hcl
 connection "openstack" {
-    plugin    = "local/openstack"
+    plugin    = "ernw/openstack"
 
-    # IdentityEndpoint specifies the HTTP endpoint that is required to work with
-    # the Identity API of the appropriate version. While it's ultimately needed by
-    # all of the identity services, it will often be populated by a provider-level
-    # function.
+    # The HTTP endpoint is REQUIRED to work with the Identity API of the appropriate version.
     # Can also be set with the environment variable "OS_AUTH_URL"
-    # identity_endpoint = "http://example.com/identity/v3"
+    identity_endpoint = "http://example.com/identity/v3"
 
-    # Username is required if using Identity V2 API. Consult with your provider's
-    # control panel to discover your account's username. In Identity V3, either
-    # UserID or a combination of Username and DomainID or DomainName are needed.
-    # Can also be set with the environment variable "OS_USERNAME"
-    # username = "admin"
-    # Can also be set with the environment variable "OS_USER_ID"
+    # Username is REQUIRED if using Identity V2 API.
+    # For Identity V3, either UserID or a combination of Username and DomainID or DomainName is REQUIRED.
+    # Can also be set with the environment variable "OS_USERNAME" and "OS_USER_ID"
+    username = "admin"
     # user_id = "d8e8fca2dc0f896fd7cb4cb0031ba249"
 
-    # Password specifies the password of the user
+    # Password is REQUIRED and specifies the password of the user.
     # Can also be set with the environment variable "OS_PASSWORD"
-    # password = "changeme"
+    password = "changeme"
 
-    # Passcode is used in TOTP authentication method
+    # Passcode is OPTIONAL and used in TOTP authentication method.
     # Can also be set with the environment variable "OS_PASSCODE"
     # passcode = "123456"
 
-    # At most one of DomainID and DomainName must be provided if using Username
-    # with Identity V3. Otherwise, either are optional.
-    # Can also be set with the environment variable "OS_DOMAIN_ID"
-    # domain_id = "default"
-    # Can also be set with the environment variable "OS_DOMAIN_NAME"
+    # At most one of DomainID and DomainName is REQUIRED if using Username with Identity V3.
+    # Otherwise, either are OPTIONAL.
+    # Can also be set with the environment variable "OS_DOMAIN_ID" and "OS_DOMAIN_NAME"
+    domain_id = "default"
     # domain_name = "Default"
 
-    # The TenantID and TenantName fields are optional for the Identity V2 API.
-    # The same fields are known as project_id and project_name in the Identity
-    # V3 API, but are collected as TenantID and TenantName here in both cases.
-    # Some providers allow you to specify a TenantName instead of the TenantId.
-    # Some require both. Your provider's authentication policies will determine
-    # how these fields influence authentication.
-    # If DomainID or DomainName are provided, they will also apply to TenantName.
-    # It is not currently possible to authenticate with Username and a Domain
-    # and scope to a Project in a different Domain by using TenantName. To
-    # accomplish that, the ProjectID will need to be provided as the TenantID
-    # option.
-    # Can also be set with the environment variable "OS_PROJECT_ID"
-    # project_id = "3e666015f769bf30cda73a1a1e9b794a"
-    # Can also be set with the environment variable "OS_PROJECT_NAME"
+    # The ProjectId or ProjectName is REQUIRED for Identity V3.
+    # Some providers REQUIRE both.
+    # Can also be set with the environment variable "OS_PROJECT_ID" and "OS_PROJECT_NAME".
+    project_id = "3e666015f769bf30cda73a1a1e9b794a"
     # project_name = "my_project"
 
-    # AllowReauth should be set to true if you grant permission for Gophercloud to
-    # cache your credentials in memory, and to allow Gophercloud to attempt to
-    # re-authenticate automatically if/when your token expires.  If you set it to
-    # false, it will not cache these settings, but re-authentication will not be
-    # possible.  This setting defaults to false.
+    # AllowReauth should be set to true if you want to cache your credentials 
+    # in memory, and to allow attempts to re-authenticate automatically if/when your token
+    # expires. This setting is OPTIONAL and defaults to false. 
     # allow_reauth = false
+
+    # Further information: https://docs.openstack.org/python-openstackclient/latest/cli/authentication.html
 }
 ```
 
@@ -129,5 +122,5 @@ Environment variables are also available as an alternate configuration method:
 
 ## Get involved
 
-* Open source: https://github.com/turbot/steampipe-plugin-openstack
+* Open source: https://github.com/ernw/steampipe-plugin-openstack
 * Community: [Slack Channel](https://steampipe.io/community/join)
